@@ -65,7 +65,6 @@ class App extends Component {
     let paths =
       this.state.paths &&
       this.state.paths.map((item, i) => {
-        console.log(item);
         let data = [
           { x: item.source.x, y: item.source.y },
           { x: item.target.x, y: item.target.y }
@@ -79,24 +78,12 @@ class App extends Component {
           .y(d => {
             return d.y;
           });
-        console.log(line(data));
-
-        // let straight = svg
-        //   .line()
-        //   .interpolate("basis")
-        //   .x(d => d.x)
-        //   .y(d => d.y);
-
-        // let data = [
-        //   { x: item.source.x, y: item.source.y },
-        //   { x: item.target.x, y: item.target.y }
-        // ];
-        return (
+        return item.source.data.name === "root" ? null : (
           <path
             key={"line" + i}
             style={{
               fill: "none",
-              stroke: "#97a6ff",
+              stroke: "#ccc",
               strokeWidth: "2px"
             }}
             className="link"
@@ -108,7 +95,7 @@ class App extends Component {
     let nodes =
       this.state.nodes &&
       this.state.nodes.map((node, i) => {
-        return (
+        return node.data.name === "root" ? null : (
           <g
             key={node.id}
             className={
@@ -118,15 +105,21 @@ class App extends Component {
           >
             <circle
               r="10"
-              style={{ fill: node.children ? "blue" : "lightsteelblue" }}
+              style={{
+                stroke: "#c4c4c4",
+                strokeWidth: "1px",
+                fill: node.children ? "#4fa1ff" : "#bcdbff"
+              }}
             />
             <text
-              y="0"
+              y="6"
               dy="0"
-              textAnchor="middle"
+              x="20"
+              transform="rotate(90)"
+              textAnchor="start"
               style={{ fillOpacity: 1, color: "black" }}
             >
-              {node.name}
+              {node.data.name}
             </text>
           </g>
         );
@@ -137,16 +130,18 @@ class App extends Component {
         <header className="App-header">
           <h2 className="App-title">Tree Node</h2>
         </header>
-        <svg
-          className="tree-chart"
-          ref={r => (this.chartRf = r)}
-          style={{ width: "800px", height: "800px" }}
-        >
-          <g transform="translate(20,20)">
-            {nodes}
-            {paths}
-          </g>
-        </svg>
+        <div style={{ height: "100%", width: "100%" }}>
+          <svg
+            className="tree-chart"
+            ref={r => (this.chartRf = r)}
+            style={{ width: "100%", height: "800px" }}
+          >
+            <g transform="translate(20,20)">
+              {paths}
+              {nodes}
+            </g>
+          </svg>
+        </div>
       </div>
     );
   }
