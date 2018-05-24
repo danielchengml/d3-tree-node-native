@@ -8,7 +8,6 @@ class App extends Component {
   state = {};
 
   componentDidMount() {
-    console.log(d3);
     this.setState({ data: data });
     // Create a root Node if none
     if (
@@ -58,7 +57,10 @@ class App extends Component {
     console.log(root);
     this.setState({ paths: tree(root).links() });
     this.setState({ nodes: root.descendants() });
-    // console.log(root);
+  }
+
+  handleNodeToggle(node) {
+    console.log(node);
   }
 
   render() {
@@ -102,6 +104,9 @@ class App extends Component {
               "node" + node.children ? " node--internal" : " node--leaf"
             }
             transform={`translate(${node.x}, ${node.y})`}
+            onClick={this.handleNodeToggle.bind(this, node)}
+            onMouseOver={this.handleOnMouseOver}
+            on
           >
             <circle
               r="10"
