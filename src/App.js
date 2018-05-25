@@ -14,7 +14,7 @@ class App extends Component {
     this.setState({
       translate: {
         x: dimensions.width / 2,
-        y: -dimensions.height / 7
+        y: -dimensions.height / 9
       }
     });
 
@@ -52,6 +52,7 @@ class App extends Component {
       const root = stratify(treeData);
       this.assignInternalProperties([root]);
       this.setState({ root: root });
+      console.log("root:", root);
       this.generateTree(root);
     } else {
       const root = stratify(data);
@@ -73,13 +74,15 @@ class App extends Component {
   }
 
   generateTree(root) {
-    const width = 800,
+    const width = 500,
       height = 600;
 
     const tree = d3
       .tree()
-      .size([height, width - 160])
+      .size([height, width])
+      .nodeSize([140, 280])
       .separation((a, b) => (a.parent.id === b.parent.id ? 0.2 : 0.4));
+
     this.setState({ paths: tree(root).links() });
     this.setState({ nodes: root.descendants() });
   }
@@ -211,7 +214,6 @@ class App extends Component {
                   : `translate(${translate.x},${translate.y})`
               }
             >
-              {console.log(translate)}
               {paths}
               {nodes}
             </g>
