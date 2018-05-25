@@ -5,9 +5,19 @@ import data from "./data";
 import "./App.css";
 
 class App extends Component {
-  state = {};
+  state = {
+    translate: null
+  };
 
   componentDidMount() {
+    const dimensions = this.treeContainer.getBoundingClientRect();
+    this.setState({
+      translate: {
+        x: dimensions.width / 2,
+        y: -dimensions.height / 7
+      }
+    });
+
     const stratify = d3
       .stratify()
       .id(d => {
@@ -42,7 +52,6 @@ class App extends Component {
       const root = stratify(treeData);
       this.assignInternalProperties([root]);
       this.setState({ root: root });
-
       this.generateTree(root);
     } else {
       const root = stratify(data);
@@ -67,7 +76,10 @@ class App extends Component {
     const width = 800,
       height = 600;
 
-    const tree = d3.tree().size([height, width - 160]);
+    const tree = d3
+      .tree()
+      .size([height, width - 160])
+      .separation((a, b) => (a.parent.id === b.parent.id ? 0.2 : 0.4));
     this.setState({ paths: tree(root).links() });
     this.setState({ nodes: root.descendants() });
   }
@@ -76,32 +88,10 @@ class App extends Component {
     const { root } = this.state;
     const matches = this.findNodesById(node.data.id, [root], []);
     const targetNode = matches[0];
-    console.log("node_collapse:", node._collapsed);
     node._collapsed ? this.expandNode(node) : this.collapseNode(node);
-    console.log("root:", this.state.root);
     this.setState({ root: root });
     this.generateTree(root);
   }
-
-  // handleNodeToggle(nodeId, evt) {
-  //   const data = clone(this.state.data);
-  //   const matches = this.findNodesById(nodeId, data, []);
-  //   const targetNode = matches[0];
-
-  //   if (this.props.collapsible && !this.state.isTransitioning) {
-  //     targetNode._collapsed ? this.expandNode(targetNode) : this.collapseNode(targetNode);
-  //     // Lock node toggling while transition takes place
-  //     this.setState({ data, isTransitioning: true }, () => this.handleOnClickCb(targetNode, evt));
-  //     // Await transitionDuration + 10 ms before unlocking node toggling again
-  //     setTimeout(
-  //       () => this.setState({ isTransitioning: false }),
-  //       this.props.transitionDuration + 10,
-  //     );
-  //     this.internalState.targetNode = targetNode;
-  //   } else {
-  //     this.handleOnClickCb(targetNode, evt);
-  //   }
-  // }
 
   collapseNode(node) {
     node._collapsed = true;
@@ -136,6 +126,7 @@ class App extends Component {
   }
 
   render() {
+    const { translate } = this.state;
     let paths =
       this.state.paths &&
       this.state.paths.map((item, i) => {
@@ -177,8 +168,6 @@ class App extends Component {
             }
             transform={`translate(${node.x}, ${node.y})`}
             onClick={this.handleNodeToggle.bind(this, node)}
-            onMouseOver={this.handleOnMouseOver}
-            on
           >
             <circle
               r="10"
@@ -206,13 +195,23 @@ class App extends Component {
         <header className="App-header">
           <h2 className="App-title">Tree Node</h2>
         </header>
-        <div style={{ height: "100%", width: "100%" }}>
+        <div
+          style={{ height: "100%", width: "100%" }}
+          ref={tc => (this.treeContainer = tc)}
+        >
           <svg
             className="tree-chart"
             ref={r => (this.chartRf = r)}
-            style={{ width: "100%", height: "800px" }}
+            style={{ width: "100%", height: "100vh" }}
           >
-            <g transform="translate(20,20)">
+            <g
+              transform={
+                translate === null
+                  ? "translate(0,0)"
+                  : `translate(${translate.x},${translate.y})`
+              }
+            >
+              {console.log(translate)}
               {paths}
               {nodes}
             </g>
