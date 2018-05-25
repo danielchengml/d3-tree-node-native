@@ -8,6 +8,14 @@ class App extends Component {
   state = {};
 
   componentDidMount() {
+    const stratify = d3
+      .stratify()
+      .id(d => {
+        return d.id;
+      })
+      .parentId(d => {
+        return d.parents[0];
+      });
     this.setState({ data: data });
     // Create a root Node if none
     if (
@@ -31,36 +39,100 @@ class App extends Component {
       // Add rootNode into data Array
       const treeData = [...data];
       treeData.push(rootNode);
-      this.setState({ treedata: treeData });
-      this.generateTree(treeData);
+      const root = stratify(treeData);
+      this.assignInternalProperties([root]);
+      this.setState({ root: root });
+
+      this.generateTree(root);
     } else {
-      this.generateTree(data);
+      const root = stratify(data);
+      this.setState({ root: root });
+      this.generateTree(root);
     }
   }
 
-  generateTree(source) {
+  assignInternalProperties(root) {
+    return root.map(node => {
+      node._collapsed = false;
+      // if there are children, recursively assign properties to them too
+      if (node.children && node.children.length > 0) {
+        node.children = this.assignInternalProperties(node.children);
+        node._children = node.children;
+      }
+      return node;
+    });
+  }
+
+  generateTree(root) {
     const width = 800,
       height = 600;
 
     const tree = d3.tree().size([height, width - 160]);
-
-    const stratify = d3
-      .stratify()
-      .id(d => {
-        return d.id;
-      })
-      .parentId(d => {
-        return d.parents[0];
-      });
-
-    const root = stratify(source);
-    console.log(root);
     this.setState({ paths: tree(root).links() });
     this.setState({ nodes: root.descendants() });
   }
 
   handleNodeToggle(node) {
-    console.log(node);
+    const { root } = this.state;
+    const matches = this.findNodesById(node.data.id, [root], []);
+    const targetNode = matches[0];
+    console.log("node_collapse:", node._collapsed);
+    node._collapsed ? this.expandNode(node) : this.collapseNode(node);
+    console.log("root:", this.state.root);
+    this.setState({ root: root });
+    this.generateTree(root);
+  }
+
+  // handleNodeToggle(nodeId, evt) {
+  //   const data = clone(this.state.data);
+  //   const matches = this.findNodesById(nodeId, data, []);
+  //   const targetNode = matches[0];
+
+  //   if (this.props.collapsible && !this.state.isTransitioning) {
+  //     targetNode._collapsed ? this.expandNode(targetNode) : this.collapseNode(targetNode);
+  //     // Lock node toggling while transition takes place
+  //     this.setState({ data, isTransitioning: true }, () => this.handleOnClickCb(targetNode, evt));
+  //     // Await transitionDuration + 10 ms before unlocking node toggling again
+  //     setTimeout(
+  //       () => this.setState({ isTransitioning: false }),
+  //       this.props.transitionDuration + 10,
+  //     );
+  //     this.internalState.targetNode = targetNode;
+  //   } else {
+  //     this.handleOnClickCb(targetNode, evt);
+  //   }
+  // }
+
+  collapseNode(node) {
+    node._collapsed = true;
+    node._children = node.children;
+    node.children = null;
+    return node;
+  }
+
+  expandNode(node) {
+    node._collapsed = false;
+    node.children = node._children;
+    node._children = null;
+    return node;
+  }
+
+  findNodesById(nodeId, nodeSet, hits) {
+    if (hits.length > 0) {
+      return hits;
+    }
+
+    hits = hits.concat(nodeSet.filter(node => node.data.id === nodeId));
+
+    nodeSet.forEach(node => {
+      if (node.children && node.children.length > 0) {
+        hits = this.findNodesById(nodeId, node.children, hits);
+        return hits;
+      }
+      return hits;
+    });
+
+    return hits;
   }
 
   render() {
@@ -113,7 +185,7 @@ class App extends Component {
               style={{
                 stroke: "#c4c4c4",
                 strokeWidth: "1px",
-                fill: node.children ? "#4fa1ff" : "#bcdbff"
+                fill: node.children || node._children ? "#4fa1ff" : "#bcdbff"
               }}
             />
             <text
@@ -129,7 +201,6 @@ class App extends Component {
           </g>
         );
       });
-
     return (
       <div className="App">
         <header className="App-header">
